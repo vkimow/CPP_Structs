@@ -66,8 +66,6 @@ bld/
 [Pp]roject/
 bin/
 bin_int/
-[Ss]rc/
-[Cc]make/
 
 
 # Visual Studio 2015/2017 cache/options directory
