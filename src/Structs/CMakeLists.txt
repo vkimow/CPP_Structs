@@ -1,23 +1,7 @@
 # auto sources
-file(GLOB_RECURSE STRUCTS_SOURCES ${STRUCTS_SOURCE_DIR}/*.cpp ${STRUCTS_SOURCE_DIR}/*.h)
-set(STRUCTS_SOURCES ${STRUCTS_SOURCES} CACHE INTERNAL "")
+file(GLOB_RECURSE STRUCTS_HEADERS ${STRUCTS_INCLUDE_DIR}/*.h)
 
-foreach(FILE IN ITEMS ${STRUCTS_SOURCES})
-    get_filename_component(FILE_PATH "${FILE}" REALPATH)
-    get_filename_component(FILE_PATH "${FILE_PATH}" PATH)
-    file(RELATIVE_PATH FILE_PATH "${STRUCTS_SOURCE_DIR}/Structs" "${FILE_PATH}")
-    
-    string(REPLACE "/" "\\" FILE_PATH "${FILE_PATH}")
-    string(REPLACE "..\\" "" FILE_PATH "${FILE_PATH}")
-
-    source_group("${FILE_PATH}" FILES "${FILE}")
-endforeach()
-
-# auto public headers
-file(GLOB_RECURSE STRUCTS_PUBLIC_HEADERS ${STRUCTS_INCLUDE_DIR}/*.h)
-set(STRUCTS_PUBLIC_HEADERS ${STRUCTS_PUBLIC_HEADERS} CACHE INTERNAL "")
-
-foreach(FILE IN ITEMS ${STRUCTS_PUBLIC_HEADERS})
+foreach(FILE IN ITEMS ${STRUCTS_HEADERS})
     get_filename_component(FILE_PATH "${FILE}" REALPATH)
     get_filename_component(FILE_PATH "${FILE_PATH}" PATH)
     file(RELATIVE_PATH FILE_PATH "${STRUCTS_INCLUDE_DIR}/Structs" "${FILE_PATH}")
@@ -28,7 +12,10 @@ foreach(FILE IN ITEMS ${STRUCTS_PUBLIC_HEADERS})
     source_group("${FILE_PATH}" FILES "${FILE}")
 endforeach()
 
-add_library(${PROJECT_NAME} ${STRUCTS_SOURCES} ${STRUCTS_PUBLIC_HEADERS})
-target_include_directories(${PROJECT_NAME} PRIVATE ${STRUCTS_INCLUDE_DIR})
-set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Main)
-set_property(DIRECTORY ${STRUCTS_PROJECT_DIR} PROPERTY VS_STARTUP_PROJECT Structs)
+# add library
+add_library(Structs INTERFACE)
+target_include_directories(Structs INTERFACE ${STRUCTS_INCLUDE_DIR}/Structs)
+target_compile_features(Structs INTERFACE cxx_std_17)
+
+add_custom_target(Structs_IDE SOURCES ${STRUCTS_HEADERS})
+set_target_properties(Structs_IDE PROPERTIES FOLDER Main)

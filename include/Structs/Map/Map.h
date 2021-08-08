@@ -1,6 +1,9 @@
 #pragma once
 
-template <typename T>
-class Map
+namespace Structs
 {
-};
+	template <typename T>
+	class Map
+	{
+	};
+}

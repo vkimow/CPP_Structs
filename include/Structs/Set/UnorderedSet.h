@@ -1,6 +1,9 @@
 #pragma once
 
-template <typename T>
-class UnorderedSet
+namespace Structs
 {
-};
+	template <typename T>
+	class UnorderedSet
+	{
+	};
+}

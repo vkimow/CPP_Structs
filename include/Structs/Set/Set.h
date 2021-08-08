@@ -1,6 +1,9 @@
 #pragma once
 
-template <typename T>
-class Set
+namespace Structs
 {
-};
+	template <typename T>
+	class Set
+	{
+	};
+}

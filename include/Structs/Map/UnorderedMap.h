@@ -1,6 +1,8 @@
 #pragma once
-
-template <typename T>
-class UnorderedMap
+namespace Structs
 {
-};
+	template <typename T>
+	class UnorderedMap
+	{
+	};
+}

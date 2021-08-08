@@ -7,9 +7,13 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include("SetupConfigurations")
 include("SetupGlobalProperties")
 include("SetupGlobalDirectories")
+include("SetupVendorLibs")
+
+enable_testing()
 
 project(Structs CXX)
 add_subdirectory(src/Structs Structs)
+add_subdirectory(src/Tests Tests)
 
 # set startrup project
-set_property(DIRECTORY ${STRUCTS_ROOT_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+set_property(DIRECTORY ${STRUCTS_ROOT_DIR} PROPERTY VS_STARTUP_PROJECT Tests)

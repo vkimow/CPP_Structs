@@ -1,6 +1,6 @@
 cd ..
 
-if not exist project(
+if not exist project (
     mkdir project
 )
 

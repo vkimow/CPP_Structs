@@ -1,6 +1,9 @@
 #pragma once
 
-template <typename T>
-class Vector
+namespace Structs
 {
-};
+	template <typename T>
+	class Vector
+	{
+	};
+}
