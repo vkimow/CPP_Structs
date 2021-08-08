@@ -1,6 +1,7 @@
 #pragma once
-#include "../Collection/ICollection.h"
 #include "IBinaryTree.h"
+#include "BinaryTreeNode.h"
+#include "BinaryTreeIterators.h"
 #include <stdexcept>
 #include <exception>
 #include <string>
@@ -8,136 +9,6 @@
 
 namespace Structs
 {
-	template <typename T>
-	class BinaryTreeNode : public IBinaryTreeNode<T>
-	{
-	public:
-		BinaryTreeNode(const T& value)
-			:BinaryTreeNode(value, nullptr, nullptr)
-		{}
-
-		BinaryTreeNode(const T& value, BinaryTreeNode* right, BinaryTreeNode* left)
-			:value(value), right(right), left(left)
-		{}
-
-		virtual void SetValue(const T& value) override { this->value = value; }
-		virtual T& GetValue() override { return value; }
-
-		virtual BinaryTreeNode* const GetLeft() const override { return left; }
-		virtual BinaryTreeNode* const GetRight() const override { return right; }
-		virtual BinaryTreeNode* const GetChild(bool isRight) const override { return isRight ? right : left; }
-
-		virtual bool HasRight() const override { return right != nullptr; }
-		bool HasLeft() const override { return left != nullptr; }
-		bool HasChild(bool isRight) const override
-		{
-			return isRight ? HasRight() : HasLeft();
-		}
-
-		void SetChild(BinaryTreeNode* child, bool isRight)
-		{
-			isRight
-				? right = child
-				: left = child;
-		}
-
-	public:
-		T value;
-		BinaryTreeNode* right;
-		BinaryTreeNode* left;
-	};
-
-	template <typename T>
-	class BinaryTreeInorderIterator : public IIterator<T, BinaryTreeInorderIterator<T>>
-	{
-	public:
-		using Node = IBinaryTreeNode<T>;
-
-	public:
-		BinaryTreeInorderIterator()
-			:nodesOrder(), currentNode(nullptr)
-		{}
-
-		BinaryTreeInorderIterator(Node* root)
-			:nodesOrder(), currentNode(root)
-		{
-			if (currentNode == nullptr)
-				return;
-
-			while (currentNode->HasLeft())
-			{
-				nodesOrder.push(currentNode);
-				currentNode = currentNode->GetLeft();
-			}
-		}
-
-		virtual BinaryTreeInorderIterator& operator++() override
-		{
-			bool iteratorMoved = false;
-
-			if (currentNode->HasRight())
-			{
-				currentNode = currentNode->GetRight();
-				iteratorMoved = true;
-			}
-
-			if (iteratorMoved)
-			{
-				while (currentNode->HasLeft())
-				{
-					nodesOrder.push(currentNode);
-					currentNode = currentNode->GetLeft();
-				}
-			}
-			else
-			{
-				if (nodesOrder.empty())
-				{
-					currentNode = nullptr;
-					return *this;
-				}
-
-				currentNode = nodesOrder.top();
-				nodesOrder.pop();
-			}
-
-			return *this;
-		}
-
-		virtual BinaryTreeInorderIterator& operator++(int) override
-		{
-			BinaryTreeInorderIterator temp = *this;
-			++(*this);
-			return temp;
-		}
-
-
-		virtual bool operator==(const BinaryTreeInorderIterator& other) const override
-		{
-			return currentNode == other.currentNode;
-		}
-
-		virtual bool operator!=(const BinaryTreeInorderIterator& other) const override
-		{
-			return currentNode != other.currentNode;
-		}
-
-		virtual T& operator*() const override
-		{
-			return currentNode->GetValue();
-		}
-
-		virtual T* operator->() const override
-		{
-			return &currentNode->GetValue();
-		}
-
-	private:
-		Node* currentNode;
-		std::stack<Node*> nodesOrder;
-	};
-
-
 	template <typename T>
 	class BinaryTree : public IBinaryTree<T, BinaryTreeInorderIterator<T>>
 	{
