@@ -16,7 +16,7 @@ namespace Structs
 		{}
 
 		BinaryTreeNode(const T& value, BinaryTreeNode* right, BinaryTreeNode* left)
-			:value(value), right(right), left(left)
+			: value(value), right(right), left(left)
 		{}
 
 		virtual void SetValue(const T& value) override { this->value = value; }

@@ -10,7 +10,7 @@
 namespace Structs
 {
 	template <typename T>
-	class BinaryTree : public IBinaryTree<T, BinaryTreeInorderIterator<T>>
+	class BinaryTree final : public IBinaryTree<T, BinaryTreeInorderIterator<T>>
 	{
 	public:
 		using Node = BinaryTreeNode<T>;
@@ -46,7 +46,7 @@ namespace Structs
 			tree.size = 0;
 		}
 
-		virtual ~BinaryTree()
+		~BinaryTree()
 		{
 			Clear();
 		}
@@ -65,12 +65,36 @@ namespace Structs
 
 			bool isRightChild = parent->value < value;
 			bool alreadyHaveChild = parent->HasChild(isRightChild);
-			parent->SetChild(newNode, isRightChild);
 
 			if (alreadyHaveChild)
 			{
 				throw std::invalid_argument("Already contains value = " + value);
 			}
+
+			parent->SetChild(newNode, isRightChild);
+		}
+
+		virtual bool TryInsert(const T& value) override
+		{
+			Node* parent = FindParent(value);
+			Node* newNode = CreateNode(value);
+
+			if (parent == nullptr)
+			{
+				root = newNode;
+				return;
+			}
+
+			bool isRightChild = parent->value <= value;
+			bool alreadyHaveChild = parent->HasChild(isRightChild);
+
+			if (alreadyHaveChild)
+			{
+				return false;
+			}
+
+			parent->SetChild(newNode, isRightChild);
+			return true;
 		}
 
 		virtual void Remove(const T& value) override
@@ -83,7 +107,31 @@ namespace Structs
 				node = FindNode(parent, value);
 			}
 
+			if (node == nullptr)
+			{
+				throw ::std::invalid_argument("Doesn't contain value = " + value);
+			}
+
 			RemoveNode(parent, node);
+		}
+
+		virtual bool TryRemove(const T& value) override
+		{
+			Node* parent = FindParent(value);
+			Node* node = root;
+
+			if (parent != nullptr)
+			{
+				node = FindNode(parent, value);
+			}
+
+			if (node == nullptr)
+			{
+				return false;
+			}
+
+			RemoveNode(parent, node);
+			return true;
 		}
 
 		virtual bool Contains(const T& value) const override
@@ -180,6 +228,11 @@ namespace Structs
 	private:
 		void RemoveNode(Node* parent, Node* node)
 		{
+			if (node == nullptr)
+
+			{
+
+			}
 			if (parent == nullptr)
 			{
 				root = nullptr;

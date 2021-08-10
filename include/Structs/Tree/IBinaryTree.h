@@ -1,5 +1,6 @@
 #pragma once
 #include "../Collection/ICollection.h"
+#include "../Collection/IIterable.h"
 #include <stdexcept>
 #include <exception>
 #include <string>
@@ -10,6 +11,12 @@ namespace Structs
 	template <typename T>
 	class IBinaryTreeNode : public IBinaryTreeRelationsNode
 	{
+	protected:
+		IBinaryTreeNode() = default;
+
+	public:
+		virtual ~IBinaryTreeNode() = default;
+
 	public:
 		virtual void SetValue(const T& value) = 0;
 		virtual T& GetValue() = 0;
@@ -22,13 +29,14 @@ namespace Structs
 
 	class IBinaryTreeRelationsNode
 	{
-	public:
+	protected:
 		IBinaryTreeRelationsNode() = default;
 		IBinaryTreeRelationsNode(const IBinaryTreeRelationsNode& node) = delete;
 		IBinaryTreeRelationsNode& operator=(const IBinaryTreeRelationsNode& node) = delete;
 
 		~IBinaryTreeRelationsNode() = default;
 
+	public:
 		virtual bool HasLeft() const = 0;
 		virtual bool HasRight() const = 0;
 		virtual bool HasChild(bool isRight) const = 0;
@@ -41,16 +49,20 @@ namespace Structs
 	template <typename T, typename Iterator>
 	class IBinaryTree : public IIterable<T, Iterator>, public ICollection
 	{
-	public:
+	protected:
 		IBinaryTree() = default;
-		IBinaryTree(const IBinaryTree& tree) = delete;
-		IBinaryTree& operator=(const IBinaryTree& tree) = delete;
+		IBinaryTree(const IBinaryTree & tree) = delete;
+		IBinaryTree& operator=(const IBinaryTree & tree) = delete;
 
+	public:
 		virtual ~IBinaryTree() = default;
 
 	public:
 		virtual void Insert(const T& value) = 0;
 		virtual void Remove(const T& value) = 0;
 		virtual bool Contains(const T& value) const = 0;
+
+		virtual bool TryInsert(const T& value) = 0;
+		virtual bool TryRemove(const T& value) = 0;
 	};
 }

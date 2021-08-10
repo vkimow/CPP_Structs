@@ -80,6 +80,40 @@ TEST_P(AVLTreeParametrizedTestWith10Values, TreeInsertAlreadyContainingElementTh
 	ASSERT_THROW(tree.Insert(value), std::invalid_argument);
 };
 
+TEST_P(AVLTreeParametrizedTestWith10Values, TreeTryInsertAlreadyContainingElementThrowsNoException)
+{
+	FillWith10Numbers();
+	int value = GetParam();
+
+	ASSERT_NO_THROW(
+		tree.TryInsert(value)
+	);
+};
+
+TEST_P(AVLTreeParametrizedTestWith10Values, TreeTryInsertAlreadyContainingElementReturnsFalse)
+{
+	FillWith10Numbers();
+	int value = GetParam();
+
+	ASSERT_EQ(tree.TryInsert(value), false);
+};
+
+TEST_P(AVLTreeParametrizedTestWith10Values, TreeTryInsertElementReturnsTrue)
+{
+	int value = GetParam();
+
+	ASSERT_EQ(tree.TryInsert(value), true);
+};
+
+TEST_P(AVLTreeParametrizedTestWith10Values, TreeTryInsertElementThrowsNoException)
+{
+	int value = GetParam();
+
+	ASSERT_NO_THROW(
+		tree.TryInsert(value)
+	);
+};
+
 TEST_P(AVLTreeParametrizedTestWith10Values, TreeRemoveValidValueThrowsNoExcpetion)
 {
 	FillWith10Numbers();

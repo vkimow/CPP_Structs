@@ -3,7 +3,7 @@
 namespace Structs
 {
 	template <typename T>
-	class CircularList
+	class Vector
 	{
 	};
 }

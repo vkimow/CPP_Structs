@@ -9,7 +9,7 @@
 namespace Structs
 {
 	template <typename T>
-	class AVLTree : public IBinaryTree<T, BinaryTreeInorderIterator<T>>
+	class AVLTree final : public IBinaryTree<T, BinaryTreeInorderIterator<T>>
 	{
 	public:
 		using Node = BinaryTreeNode<T>;
@@ -45,7 +45,7 @@ namespace Structs
 			tree.size = 0;
 		}
 
-		virtual ~AVLTree()
+		~AVLTree()
 		{
 			Clear();
 		}
@@ -53,12 +53,68 @@ namespace Structs
 	public:
 		virtual void Insert(const T& value) override
 		{
-			root = InsertRecursive(root, value);
+			Node* newRoot = nullptr;
+
+			try
+			{
+				newRoot = InsertRecursive(root, value);
+			}
+			catch (std::invalid_argument error)
+			{
+				throw error;
+			}
+
+			root = newRoot;
+		}
+
+		virtual bool TryInsert(const T& value) override
+		{
+			Node* newRoot = nullptr;
+
+			try
+			{
+				newRoot = InsertRecursive(root, value);
+			}
+			catch (std::invalid_argument error)
+			{
+				return false;
+			}
+
+			root = newRoot;
+			return true;
 		}
 
 		virtual void Remove(const T& value) override
 		{
-			root = RemoveRecursive(root, value);
+			Node* newRoot = nullptr;
+
+			try
+			{
+				newRoot = RemoveRecursive(root, value);
+			}
+			catch (std::invalid_argument error)
+			{
+				throw error;
+			}
+
+			root = newRoot;
+		}
+
+		virtual bool TryRemove(const T& value) override
+		{
+			Node* newRoot = nullptr;
+
+			try
+			{
+				newRoot = RemoveRecursive(root, value);
+			}
+			catch (std::invalid_argument error)
+			{
+				return false;
+			}
+
+			root = newRoot;
+			return true;
 		}
 
 		virtual bool Contains(const T& value) const override
@@ -90,11 +146,13 @@ namespace Structs
 			}
 			else if (node->value > value)
 			{
-				node->left = InsertRecursive(node->left, value);
+				Node* newLeft = InsertRecursive(node->left, value);
+				node->left = newLeft;
 			}
 			else if (node->value < value)
 			{
-				node->right = InsertRecursive(node->right, value);
+				Node* newRight = InsertRecursive(node->right, value);
+				node->right = newRight;
 			}
 			else
 			{
@@ -112,11 +170,13 @@ namespace Structs
 			}
 			else if (node->value > value)
 			{
-				node->left = RemoveRecursive(node->left, value);
+				Node* newLeft = RemoveRecursive(node->left, value);
+				node->left = newLeft;
 			}
 			else if (node->value < value)
 			{
-				node->right = RemoveRecursive(node->right, value);
+				Node* newRight = RemoveRecursive(node->right, value);
+				node->right = newRight;
 			}
 			else
 			{

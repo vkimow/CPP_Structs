@@ -1,5 +1,6 @@
 #pragma once
-#include "../Collection/ICollection.h"
+#include "IList.h"
+#include "ListIterator.h"
 #include <stdexcept>
 #include <string>
 
@@ -7,86 +8,35 @@ namespace Structs
 {
 #pragma region Node
 	template <typename T>
-	struct ListNode
+	struct ListNode : IListNode<T>
 	{
-		T value;
-		ListNode* next;
-		ListNode* previous;
-
 		ListNode(const T& value, ListNode* previous = nullptr, ListNode* next = nullptr) :
 			value(value), previous(previous), next(next)
 		{}
-	};
-#pragma endregion
-
-#pragma region Iterator
-	template <typename T>
-	class ListIterator : IIterator<T, ListIterator<T>>
-	{
-	private:
-		using Node = ListNode<T>;
 
 	public:
-		ListIterator(Node* node)
-			: currentNode(node)
-		{}
+		void SetNext(ListNode* const node) { next = node; }
+		void SetPrevious(ListNode* const node) { previous = node; }
 
-	public:
-		virtual ListIterator& operator++() override
-		{
-			currentNode = currentNode->next;
-			return *this;
-		}
+		virtual void SetValue(const T& value) override { this->value = value; }
+		virtual T& GetValue() override { return value; }
 
-		virtual ListIterator& operator++(int) override
-		{
-			ListIterator<T> tempIterator = *this;
-			++(*this);
-			return tempIterator;
-		}
+		virtual bool HasNext() const override { return next != nullptr; }
+		virtual bool HasPrevious() const override { return previous != nullptr; }
 
-		ListIterator& operator--()
-		{
-			currentNode = currentNode->previous;
-			return *this;
-		}
-
-		ListIterator operator--(int)
-		{
-			ListIterator tempIterator = *this;
-			--(*this);
-			return tempIterator;
-		}
-
-		virtual bool operator==(const ListIterator& rhs) const override
-		{
-			return currentNode == rhs.currentNode;
-		}
-
-		virtual bool operator!=(const ListIterator& rhs) const override
-		{
-			return currentNode != rhs.currentNode;
-		}
-
-		virtual T& operator*() const override
-		{
-			return currentNode->value;
-
-		}
-
-		virtual T* operator->() const override
-		{
-			return &currentNode->value;
-		}
+		virtual ListNode* const GetNext() const override { return next; }
+		virtual ListNode* const GetPrevious() const override { return previous; }
 
 	private:
-		Node* currentNode;
+		T value;
+		ListNode* next;
+		ListNode* previous;
 	};
 #pragma endregion
 
 #pragma region List
 	template <typename T>
-	class List : public IIterable<T, ListIterator<T>>, public ICollection
+	class List final : public IList<T, ListIterator<T>>
 	{
 	public:
 		using Node = ListNode<T>;
@@ -105,19 +55,15 @@ namespace Structs
 			size(1)
 		{}
 
-		List(const List& list) = delete;
-
 		List(List&& list)
 			: head(std::move(list.head)),
 			tail(std::move(list.tail)),
-			size(std::move(list.size))
+			size(list.size)
 		{
 			list.head = nullptr;
 			list.tail = nullptr;
 			list.size = 0;
 		}
-
-		List& operator=(const List& rhs) = delete;
 
 		List& operator=(List&& rhs)
 		{
@@ -127,7 +73,7 @@ namespace Structs
 			Clear();
 			head = std::move(rhs.head);
 			tail = std::move(rhs.tail);
-			size = std::move(rhs.size);
+			size = rhs.size;
 
 			rhs.head = nullptr;
 			rhs.tail = nullptr;
@@ -139,10 +85,12 @@ namespace Structs
 			Clear();
 		}
 
+	public:
 		bool operator==(const List& rhs) { return head == rhs.head; }
 		bool operator!=(const List& rhs) { return !operator==(rhs); }
 
-		void Insert(const T& value, size_t index)
+	public:
+		virtual void Insert(const T& value, size_t index) override
 		{
 			if (index <= 0 || index >= size)
 			{
@@ -162,13 +110,13 @@ namespace Structs
 			}
 
 			Node* nodeToMove = GetNode(index);
-			Node* newNode = new Node(value, nodeToMove->previous, nodeToMove);
-			nodeToMove->previous->next = newNode;
-			nodeToMove->previous = newNode;
+			Node* newNode = new Node(value, nodeToMove->GetPrevious(), nodeToMove);
+			nodeToMove->GetPrevious()->SetNext(newNode);
+			nodeToMove->SetPrevious(newNode);
 			++size;
 		}
 
-		void AddFirst(const T& value)
+		virtual void AddFirst(const T& value) override
 		{
 			if (IsEmpty())
 			{
@@ -177,12 +125,12 @@ namespace Structs
 			}
 
 			Node* node = new Node(value, nullptr, head);
-			head->previous = node;
+			head->SetPrevious(node);
 			head = node;
 			++size;
 		}
 
-		void AddLast(const T& value)
+		virtual void AddLast(const T& value) override
 		{
 			if (IsEmpty())
 			{
@@ -191,12 +139,13 @@ namespace Structs
 			}
 
 			Node* node = new Node(value, tail, nullptr);
-			tail->next = node;
+			tail->SetNext(node);
 			tail = node;
 			++size;
 		}
 
-		void RemoveAt(size_t index)
+	public:
+		virtual void RemoveAt(size_t index) override
 		{
 			if (index < 0 || index >= size)
 			{
@@ -216,19 +165,19 @@ namespace Structs
 			}
 
 			Node* nodeToRemove = GetNode(index);
-			Node* previous = nodeToRemove->previous;
-			Node* next = nodeToRemove->next;
+			Node* previous = nodeToRemove->GetPrevious();
+			Node* next = nodeToRemove->GetNext();
 
-			previous->next = nodeToRemove->next;
-			next->previous = nodeToRemove->previous;
+			previous->SetNext(nodeToRemove->GetNext());
+			next->SetPrevious(nodeToRemove->GetPrevious());
 
 			delete nodeToRemove;
 			--size;
 		}
 
-		void Remove(const T& value) { RemoveAt(GetIndex(value)); }
+		virtual void Remove(const T& value) override { RemoveAt(GetIndex(value)); }
 
-		void RemoveFirst()
+		virtual void RemoveFirst() override
 		{
 			if (IsEmpty())
 			{
@@ -242,14 +191,14 @@ namespace Structs
 			}
 
 			Node* nodeToRemove = head;
-			head = head->next;
-			head->previous = nullptr;
+			head = head->GetNext();
+			head->SetPrevious(nullptr);
 
 			delete nodeToRemove;
 			--size;
 		}
 
-		void RemoveLast()
+		virtual void RemoveLast() override
 		{
 			if (IsEmpty())
 			{
@@ -263,17 +212,17 @@ namespace Structs
 			}
 
 			Node* nodeToRemove = tail;
-			tail = tail->previous;
-			tail->next = nullptr;
+			tail = tail->GetPrevious();
+			tail->SetNext(nullptr);
 
 			delete nodeToRemove;
 			--size;
 		}
 
-		T& Get(size_t index) const { return GetNode(index)->value; }
-		T& operator[](size_t index) const { return Get(index); }
-		T& GetFirst() const { return head->value; }
-		T& GetLast() const { return tail->value; }
+		virtual T& GetAt(size_t index) override { return GetNode(index)->GetValue(); }
+		virtual T& operator[](size_t index) override { return GetAt(index); }
+		virtual T& GetFirst() override { return head->GetValue(); }
+		virtual T& GetLast() override { return tail->GetValue(); }
 
 	private:
 		void CreateHead(const T& value)
@@ -301,7 +250,7 @@ namespace Structs
 
 			for (int i = 0; i < index; ++i)
 			{
-				node = node->next;
+				node = node->GetNext();
 			}
 
 			return node;
@@ -313,22 +262,32 @@ namespace Structs
 
 			for (int i = 0; i < index; ++i)
 			{
-				node = node->previous;
+				node = node->GetPrevious();
 			}
 
 			return node;
 		}
 
 	public:
-		T& GetIndex(const T& value) const
+		size_t GetIndex(const T& value) const
 		{
+			size_t index = 0;
 
+			for (T& listValue : *this)
+			{
+				if (listValue == value)
+					return index;
+
+				++index;
+			}
+
+			throw ::std::invalid_argument("Doesn't contain value = " + value);
 		}
 
-		bool IsEmpty() const override { return head == nullptr; }
-		size_t GetSize() const override { return size; }
+		virtual bool IsEmpty() const override { return head == nullptr; }
+		virtual size_t GetSize() const override { return size; }
 
-		void Clear() override
+		virtual void Clear() override
 		{
 			if (size == 0)
 				return;
@@ -341,7 +300,7 @@ namespace Structs
 			while (node != nullptr)
 			{
 				Node* temp = node;
-				node = node->next;
+				node = node->GetNext();
 				delete temp;
 			}
 		}
