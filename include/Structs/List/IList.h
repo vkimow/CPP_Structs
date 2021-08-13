@@ -6,40 +6,6 @@
 
 namespace Structs
 {
-	template <typename T>
-	class IListNode : public IListRelationsNode
-	{
-	protected:
-		IListNode() = default;
-
-	public:
-		virtual ~IListNode() = default;
-
-	public:
-		virtual void SetValue(const T& value) = 0;
-		virtual T& GetValue() = 0;
-
-		virtual IListNode* const GetNext() const override = 0;
-		virtual IListNode* const GetPrevious() const override = 0;
-	};
-
-	class IListRelationsNode
-	{
-	protected:
-		IListRelationsNode() = default;
-		IListRelationsNode(const IListRelationsNode& node) = delete;
-		IListRelationsNode& operator=(const IListRelationsNode& node) = delete;
-
-		~IListRelationsNode() = default;
-
-	public:
-		virtual bool HasNext() const = 0;
-		virtual bool HasPrevious() const = 0;
-
-		virtual IListRelationsNode* const GetNext() const = 0;
-		virtual IListRelationsNode* const GetPrevious() const = 0;
-	};
-
 	template <typename T, typename Iterator>
 	class IList : public IIterable<T, Iterator>, public ICollection
 	{

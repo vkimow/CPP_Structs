@@ -18,7 +18,6 @@ namespace Structs
 		virtual ~IBinaryTreeNode() = default;
 
 	public:
-		virtual void SetValue(const T& value) = 0;
 		virtual T& GetValue() = 0;
 
 		virtual IBinaryTreeNode* const GetLeft() const override = 0;

@@ -19,7 +19,6 @@ namespace Structs
 			: value(value), right(right), left(left)
 		{}
 
-		virtual void SetValue(const T& value) override { this->value = value; }
 		virtual T& GetValue() override { return value; }
 
 		virtual BinaryTreeNode* const GetLeft() const override { return left; }

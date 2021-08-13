@@ -1,6 +1,5 @@
 #pragma once
 #include "IList.h"
-#include "ListIterator.h"
 #include <stdexcept>
 #include <string>
 
@@ -8,7 +7,7 @@ namespace Structs
 {
 #pragma region Node
 	template <typename T>
-	struct ListNode : IListNode<T>
+	struct ListNode
 	{
 		ListNode(const T& value, ListNode* previous = nullptr, ListNode* next = nullptr) :
 			value(value), previous(previous), next(next)
@@ -18,19 +17,87 @@ namespace Structs
 		void SetNext(ListNode* const node) { next = node; }
 		void SetPrevious(ListNode* const node) { previous = node; }
 
-		virtual void SetValue(const T& value) override { this->value = value; }
-		virtual T& GetValue() override { return value; }
+		T& GetValue() { return value; }
 
-		virtual bool HasNext() const override { return next != nullptr; }
-		virtual bool HasPrevious() const override { return previous != nullptr; }
+		bool HasNext() const { return next != nullptr; }
+		bool HasPrevious() const { return previous != nullptr; }
 
-		virtual ListNode* const GetNext() const override { return next; }
-		virtual ListNode* const GetPrevious() const override { return previous; }
+		ListNode* const GetNext() const { return next; }
+		ListNode* const GetPrevious() const { return previous; }
 
 	private:
 		T value;
 		ListNode* next;
 		ListNode* previous;
+	};
+#pragma endregion
+
+#pragma region Iterator
+	template <typename T>
+	class ListIterator final : IIterator<T, ListIterator<T>>
+	{
+	private:
+		using Node = ListNode<T>;
+
+	public:
+		ListIterator()
+			: currentNode(nullptr)
+		{}
+
+		ListIterator(Node* const node)
+			: currentNode(node)
+		{}
+
+	public:
+		virtual ListIterator& operator++() override
+		{
+			currentNode = currentNode->GetNext();
+			return *this;
+		}
+
+		virtual ListIterator& operator++(int) override
+		{
+			ListIterator<T> tempIterator = *this;
+			++(*this);
+			return tempIterator;
+		}
+
+		ListIterator& operator--()
+		{
+			currentNode = currentNode->GetPrevious();
+			return *this;
+		}
+
+		ListIterator operator--(int)
+		{
+			ListIterator tempIterator = *this;
+			--(*this);
+			return tempIterator;
+		}
+
+		virtual bool operator==(const ListIterator& rhs) const override
+		{
+			return currentNode == rhs.currentNode;
+		}
+
+		virtual bool operator!=(const ListIterator& rhs) const override
+		{
+			return currentNode != rhs.currentNode;
+		}
+
+		virtual T& operator*() const override
+		{
+			return currentNode->GetValue();
+
+		}
+
+		virtual T* operator->() const override
+		{
+			return &currentNode->GetValue();
+		}
+
+	private:
+		Node* currentNode;
 	};
 #pragma endregion
 
@@ -219,10 +286,44 @@ namespace Structs
 			--size;
 		}
 
+
+		virtual void Clear() override
+		{
+			if (size == 0)
+				return;
+
+			Node* node = head;
+			head = nullptr;
+			tail = nullptr;
+			size = 0;
+
+			while (node != nullptr)
+			{
+				Node* temp = node;
+				node = node->GetNext();
+				delete temp;
+			}
+		}
+
 		virtual T& GetAt(size_t index) override { return GetNode(index)->GetValue(); }
 		virtual T& operator[](size_t index) override { return GetAt(index); }
 		virtual T& GetFirst() override { return head->GetValue(); }
 		virtual T& GetLast() override { return tail->GetValue(); }
+
+		size_t GetIndex(const T& value) const
+		{
+			size_t index = 0;
+
+			for (T& listValue : *this)
+			{
+				if (listValue == value)
+					return index;
+
+				++index;
+			}
+
+			throw ::std::invalid_argument("Doesn't contain value = " + value);
+		}
 
 	private:
 		void CreateHead(const T& value)
@@ -269,41 +370,8 @@ namespace Structs
 		}
 
 	public:
-		size_t GetIndex(const T& value) const
-		{
-			size_t index = 0;
-
-			for (T& listValue : *this)
-			{
-				if (listValue == value)
-					return index;
-
-				++index;
-			}
-
-			throw ::std::invalid_argument("Doesn't contain value = " + value);
-		}
-
 		virtual bool IsEmpty() const override { return head == nullptr; }
 		virtual size_t GetSize() const override { return size; }
-
-		virtual void Clear() override
-		{
-			if (size == 0)
-				return;
-
-			Node* node = head;
-			head = nullptr;
-			tail = nullptr;
-			size = 0;
-
-			while (node != nullptr)
-			{
-				Node* temp = node;
-				node = node->GetNext();
-				delete temp;
-			}
-		}
 
 		virtual Iterator begin() const override { return Iterator(head); }
 		virtual Iterator end() const override { return Iterator(nullptr); }
