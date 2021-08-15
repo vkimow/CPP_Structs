@@ -1,9 +1,5 @@
 #pragma once
 #include "IBinaryTree.h"
-#include <stdexcept>
-#include <exception>
-#include <string>
-#include <stack>
 
 namespace Structs
 {
@@ -99,7 +95,8 @@ namespace Structs
 		return node;
 	}
 
-	size_t GetHeightOf(const IBinaryTreeRelationsNode* const node)
+	template<typename Node, typename = std::is_base_of<IBinaryTreeRelationsNode, Node>>
+	size_t GetHeightOf(const Node* const node)
 	{
 		size_t hLeft = 0;
 		size_t hRight = 0;

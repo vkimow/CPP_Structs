@@ -3,9 +3,7 @@
 #include "BinaryTreeNode.h"
 #include "BinaryTreeIterators.h"
 #include <stdexcept>
-#include <exception>
 #include <string>
-#include <stack>
 
 namespace Structs
 {

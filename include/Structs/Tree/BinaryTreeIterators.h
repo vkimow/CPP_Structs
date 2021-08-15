@@ -2,7 +2,6 @@
 #include "IBinaryTree.h"
 #include "../Collection/IIterator.h"
 #include <stdexcept>
-#include <exception>
 #include <string>
 #include <stack>
 

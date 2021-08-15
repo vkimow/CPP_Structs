@@ -1,6 +1,5 @@
 #pragma once
 #include "ISet.h"
-#include <xhash>
 #include <stdexcept>
 
 namespace Structs
@@ -10,13 +9,24 @@ namespace Structs
 	{
 	public:
 		UnorderedSetElement()
-			: value(), hash(0), bucketIndex(0), nextIndex(0), hasValue(false), hasNext(false)
+			: hash(0), nextIndex(0), hasValue(false), hasNext(false)
 		{}
 
 	public:
-		void SetValue(const T& value, size_T hash) { this->value = value; this->hash = hash; hasValue = true }
+		bool operator==(const T& rhs) const
+		{
+			return hasValue && value == rhs;
+		}
+
+		bool operator!=(const T& rhs) const
+		{
+			return !(*this == rhs);
+		}
+
+	public:
+		void SetValue(const T& value, size_t hash) { this->value = value; this->hash = hash; hasValue = true; }
 		void ResetValue() { hasValue = false; }
-		const T& GetValue() const { return value; }
+		T& GetValue() { return value; }
 
 		size_t GetHash() const { return hash; }
 
@@ -35,32 +45,9 @@ namespace Structs
 		bool hasNext;
 	};
 
-	template<typename T>
-	bool operator==(UnorderedSetElement<T> lhs, const T& rhs)
-	{
-		return lhs.HasValue() && lhs.GetValue() == rhs;
-	}
-
-	template<typename T>
-	bool operator==(const T& lhs, UnorderedSetElement<T> rhs)
-	{
-		return rhs.HasValue() && lhs == rhs.GetValue();
-	}
-
-	template<typename T>
-	bool operator!=(UnorderedSetElement<T> lhs, const T& rhs)
-	{
-		return !(lhs == rhs);
-	}
-
-	template<typename T>
-	bool operator!=(const T& lhs, UnorderedSetElement<T> rhs)
-	{
-		return !(lhs == rhs);
-	}
 
 	template <typename T>
-	class UnorderedSetIterator : IIterator<T, UnorderedSetIterator<T>>
+	class UnorderedSetIterator : public IIterator<T, UnorderedSetIterator<T>>
 	{
 	private:
 		using Element = UnorderedSetElement<T>;
@@ -71,11 +58,11 @@ namespace Structs
 			: Iterator(nullptr, true)
 		{}
 
-		Iterator(const Element* element)
+		Iterator(Element* element)
 			: Iterator(element, false)
 		{}
 
-		Iterator(const Element* element, bool isInvalid)
+		Iterator(Element* element, bool isInvalid)
 			: currentElement(element), isInvalid(isInvalid)
 		{}
 
@@ -89,7 +76,8 @@ namespace Structs
 			do
 			{
 				++currentElement;
-			} while (!currentElement->HasValue());
+			} 
+			while (!currentElement->HasValue());
 
 			return *this;
 		}
@@ -108,6 +96,7 @@ namespace Structs
 				return *this;
 			}
 
+			do
 			{
 				--currentElement;
 			}
@@ -136,32 +125,22 @@ namespace Structs
 
 		virtual bool operator!=(const Iterator& rhs) const override
 		{
-			return !(this == rhs);
+			return !(*this == rhs);
 		}
 
 		virtual T& operator*() const override
 		{
-			if (isInvalid)
-			{
-				throw std::out_of_range("Can't take value from invalid iterator");
-			}
-
-			return *currentElement->GetValue();
+			return currentElement->GetValue();
 		}
 
 		virtual T* operator->() const override
 		{
-			if (isInvalid)
-			{
-				throw std::out_of_range("Can't take value from invalid iterator");
-			}
-
-			return &(*currentElement->GetValue());
+			return &(currentElement->GetValue());
 		}
 
 	private:
-		const Element* currentElement;
-		bool isInvalid;
+		Element* currentElement;
+		mutable bool isInvalid;
 	};
 
 	template<typename T>
@@ -195,11 +174,13 @@ namespace Structs
 
 	public:
 		UnorderedSet()
-			: hasher(), elements(nullptr), buckets(nullptr), size(0), capacity(0)
-		{}
+			: elements(nullptr), buckets(nullptr), size(0), capacity(0), lastElementIndex(0)
+		{
+			ReAlloc(5);
+		}
 
 		UnorderedSet(UnorderedSet&& set)
-			: hasher(),
+			:
 			elements(std::move(set.elements)),
 			buckets(std::move(set.buckets)),
 			size(set.size),
@@ -246,19 +227,20 @@ namespace Structs
 
 		virtual bool TryInsert(const T& value) override
 		{
-			if (lastElementIndex >= capacity - 1 || size / capacity < fillValue)
+			if (lastElementIndex >= capacity || size / capacity > fillValue)
 			{
 				ReAlloc();
 			}
 
 			size_t hash = hasher(value);
-			const Bucket& bucket = GetBucketByHash(hash);
+			Bucket& bucket = GetBucketByHash(hash);
 
-			if (!bucket.HasElement())
+			if (!(bucket.HasElement()))
 			{
-				size_t elementIndex = ++lastElementIndex;
+				size_t elementIndex = lastElementIndex;
 				elements[elementIndex].SetValue(value, hash);
 				bucket.SetElementIndex(elementIndex);
+				++lastElementIndex;
 				++size;
 
 				return true;
@@ -286,9 +268,10 @@ namespace Structs
 				return false;
 			}
 
-			size_t elementIndex = ++lastElementIndex;
-			elements[elementIndex].SetValue(value);
+			size_t elementIndex = lastElementIndex;
+			elements[elementIndex].SetValue(value, hash);
 			element->SetNextIndex(elementIndex);
+			++lastElementIndex;
 			++size;
 
 			return true;
@@ -316,13 +299,13 @@ namespace Structs
 			size_t index = bucket.GetElementIndex();
 			Element* element = &elements[index];
 
-			while (element != value && element->HasNext())
+			while (*element != value && element->HasNext())
 			{
 				index = element->GetNextIndex();
 				element = &elements[index];
 			}
 
-			if (element == value)
+			if (*element == value)
 			{
 				element->ResetValue();
 				return true;
@@ -331,9 +314,9 @@ namespace Structs
 			return false;
 		}
 
-		virtual bool Contains(const T& value) const override
+		virtual bool Contains(const T& value) override
 		{
-			const Bucket& bucket = GetBucket(value);
+			Bucket& bucket = GetBucket(value);
 
 			if (!bucket.HasElement())
 			{
@@ -343,13 +326,13 @@ namespace Structs
 			size_t index = bucket.GetElementIndex();
 			Element* element = &elements[index];
 
-			while (element != value && element->HasNext())
+			while (*element != value && element->HasNext())
 			{
 				index = element->GetNextIndex();
 				element = &elements[index];
 			}
 
-			return element == value;
+			return *element == value;
 		}
 
 		virtual void Clear() override
@@ -369,67 +352,97 @@ namespace Structs
 		}
 
 	private:
-		const Bucket& GetBucket(const T& value) const
-		{
-			return GetBucketByHash(value, buckets, capacity);
-		}
-
-		const Bucket& GetBucketByHash(size_t hash) const
-		{
-			return GetBucketByHash(hash, buckets, capacity);
-		}
-
-		const Bucket& GetBucketByElement(const Element& element) const
-		{
-			size_t hash = element.GetHash();
-			return GetBucketByHash(hash, buckets, capacity);
-		}
-
-		const Bucket& GetBucket(const T& value, Bucket* buckets, size_t capacity) const
-		{
-			size_t hash = hasher(value);
-			return GetBucketByHash(hash, buckets, capacity);
-		}
-
-		const Bucket& GetBucketByHash(size_t hash, Bucket* buckets, size_t capacity) const
+		Bucket& GetBucketByHash(size_t hash, Bucket* buckets, size_t capacity)
 		{
 			size_t bucketIndex = hash % capacity;
 			return buckets[bucketIndex];
 		}
 
-		const Bucket& GetBucketByElement(const Element& element, Bucket* buckets, size_t capacity) const
+		Bucket& GetBucketByElement(const Element& element, Bucket* buckets, size_t capacity)
 		{
 			size_t hash = element.GetHash();
 			return GetBucketByHash(hash, buckets, capacity);
 		}
 
+		Bucket& GetBucket(const T& value, Bucket* buckets, size_t capacity)
+		{
+			size_t hash = hasher(value);
+			return GetBucketByHash(hash, buckets, capacity);
+		}
+
+		Bucket& GetBucketByHash(size_t hash)
+		{
+			return GetBucketByHash(hash, buckets, capacity);
+		}
+
+		Bucket& GetBucketByElement(const Element& element)
+		{
+			return GetBucketByElement(element, buckets, capacity);
+		}
+
+		Bucket& GetBucket(const T& value)
+		{
+			return GetBucket(value, buckets, capacity);
+		}
+
+
 		void ReAlloc()
 		{
 			size_t newCapacity = capacity * 2;
+			ReAlloc(newCapacity);
+		}
 
-			Bucket* newBuckets = new Bucket[capacity];
-			Element* newElements = new Element[capacity];
+		void ReAlloc(size_t newCapacity)
+		{
+			Bucket* newBuckets = new Bucket[newCapacity];
+			Element* newElements = new Element[newCapacity];
 
-			std::copy(elements[0], elements[size - 1], newElements);
-
-			for (size_t i = 0; i < size; ++i)
+			if (elements != nullptr)
 			{
-				RehashElement(i, newBuckets, newElements, newCapacity);
+				size_t newLastElementIndex = 0;
+
+				for (size_t i = 0; i < lastElementIndex; ++i)
+				{
+					if (TryMoveElement(i, newLastElementIndex, newElements))
+					{
+						++newLastElementIndex;
+					}
+				}
+
+				for (size_t i = 0; i < size; ++i)
+				{
+					RehashElement(i, newBuckets, newElements, newCapacity);
+				}
+
+				lastElementIndex = newLastElementIndex;
+				delete[] elements;
+				delete[] buckets;
 			}
 
-			delete[] elements;
-			delete[] buckets;
-
+			capacity = newCapacity;
 			elements = newElements;
 			buckets = newBuckets;
 		}
 
-		void RehashElement(const size_t elementIndex, Bucket* const newBuckets, Element* const newElements, size_t newCapacity)
+		bool TryMoveElement(const size_t elementIndex, const size_t newElementIndex, Element* const newElements)
 		{
-			Element& elementToRehash = newElements[elementIndex];
+			Element& element = elements[elementIndex];
+
+			if (element.HasValue())
+			{
+				newElements[newElementIndex] = std::move(element);
+				return true;
+			}
+
+			return false;
+		}
+
+		void RehashElement(const size_t elementIndex, Bucket* const buckets, Element* const elements, size_t capacity)
+		{
+			Element& elementToRehash = elements[elementIndex];
 			elementToRehash.ResetNextIndex();
 
-			Bucket& bucket = GetBucketByElement(elementToRehash, newBuckets, newCapacity);
+			Bucket& bucket = GetBucketByElement(elementToRehash, buckets, capacity);
 
 			if (!bucket.HasElement())
 			{
@@ -438,25 +451,25 @@ namespace Structs
 			}
 
 			size_t next = bucket.GetElementIndex();
-			Element* element = &newElements[next];
+			Element* element = &elements[next];
 
 			while (element->HasNext())
 			{
 				next = element->GetNextIndex();
-				element = &newElements[next];
+				element = &elements[next];
 			}
 
 			element->SetNextIndex(elementIndex);
 		}
 
 	private:
-		const Element* GetLastValidElement()
+		Element* GetLastValidElement() const
 		{
-			for (size_t i = lastElementIndex; i >= 0; --i)
+			for (size_t i = lastElementIndex - 1; i >= 0; --i)
 			{
 				if (elements[i].HasValue())
 				{
-					return &(*elements[i]);
+					return &elements[i];
 				}
 			}
 
@@ -468,17 +481,17 @@ namespace Structs
 		virtual bool IsEmpty() const override { return size == 0; }
 
 	public:
-		virtual Iterator begin()
+		virtual Iterator begin() const override
 		{
 			if (IsEmpty())
 			{
 				return Iterator(nullptr, true);
 			}
 
-			return Iterator(elements[0]);
+			return Iterator(&elements[0]);
 		}
 
-		virtual Iterator end()
+		virtual Iterator end() const override
 		{
 			if (IsEmpty())
 			{
@@ -489,7 +502,7 @@ namespace Structs
 		}
 
 	private:
-		const static float fillValue = 0.75;
+		const static float fillValue;
 
 	private:
 		Hasher hasher;
@@ -501,4 +514,7 @@ namespace Structs
 		size_t capacity;
 		size_t lastElementIndex;
 	};
+
+	template <typename T, typename Hasher>
+	const float UnorderedSet<T, Hasher>::fillValue = 0.75;
 }

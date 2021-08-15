@@ -2,9 +2,7 @@
 #include "../Collection/ICollection.h"
 #include "BinaryTree.h"
 #include <stdexcept>
-#include <exception>
 #include <string>
-#include <stack>
 
 namespace Structs
 {

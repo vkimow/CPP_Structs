@@ -18,7 +18,7 @@ namespace Structs
 	public:
 		virtual void Insert(const T& value) = 0;
 		virtual void Remove(const T& value) = 0;
-		virtual bool Contains(const T& value) const = 0;
+		virtual bool Contains(const T& value) = 0;
 
 		virtual bool TryInsert(const T& value) = 0;
 		virtual bool TryRemove(const T& value) = 0;

@@ -1,10 +1,6 @@
 #pragma once
 #include "../Collection/ICollection.h"
 #include "../Collection/IIterable.h"
-#include <stdexcept>
-#include <exception>
-#include <string>
-#include <stack>
 
 namespace Structs
 {

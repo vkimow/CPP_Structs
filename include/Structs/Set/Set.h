@@ -5,11 +5,11 @@
 namespace Structs
 {
 	template <typename T>
-	class SetIterator : IIterator<T, SetIterator<T>>
+	class SetIterator : public IIterator<T, SetIterator<T>>
 	{
 	private:
 		using Tree = AVLTree<T>;
-		using TreeIterator = Tree::Iterator;
+		using TreeIterator = BinaryTreeInorderIterator<T>;
 
 	public:
 		SetIterator() = delete;
@@ -21,6 +21,7 @@ namespace Structs
 		virtual SetIterator& operator++() override
 		{
 			++i;
+			return *this;
 		}
 
 		virtual SetIterator& operator++(int) override
@@ -92,7 +93,7 @@ namespace Structs
 			return tree.TryRemove(value);
 		}
 
-		virtual bool Contains(const T& value) const override
+		virtual bool Contains(const T& value) override
 		{
 			return tree.Contains(value);
 		}
@@ -107,12 +108,12 @@ namespace Structs
 		virtual bool IsEmpty() const override { return tree.IsEmpty(); }
 
 	public:
-		virtual Iterator begin()
+		virtual Iterator begin() const override
 		{
 			return Iterator(tree.begin());
 		}
 
-		virtual Iterator end()
+		virtual Iterator end() const override
 		{
 			return Iterator(tree.end());
 		}
