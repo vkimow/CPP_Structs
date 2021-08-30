@@ -1,25 +1,33 @@
 #pragma once
-#include "../Collection/ICollection.h"
 #include "BinaryTree.h"
+#include "../Collection/ICollection.h"
+#include "../Collection//IIterable.h"
+#include "../HashTable/KeySelectors.h"
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 namespace Structs
 {
-	template <typename T>
-	class AVLTree final : public IBinaryTree<T, BinaryTreeInorderIterator<T>>
+	template<typename Key, 
+		typename Value = Key, 
+		typename KeySelector = Keys::NoSelector<Value>>
+	class AVLTree final : public IIterable<Value, BinaryTreeInorderIterator<Value>>, public ICollection
 	{
+	private:
+		static_assert(std::is_base_of<Keys::Selector<Key, Value>, KeySelector>::value, "KeySelector mast be derivied from Structs::Keys::Selector");
+
 	public:
-		using Node = BinaryTreeNode<T>;
-		using Iterator = BinaryTreeInorderIterator<T>;
+		using Node = BinaryTreeNode<Value>;
+		using Iterator = BinaryTreeInorderIterator<Value>;
 
 	public:
 		AVLTree()
-			: root(nullptr), size(0)
+			: root(nullptr), size(0), keySelector()
 		{}
 
-		AVLTree(const T& value)
-			: root(new Node(value)), size(1)
+		AVLTree(const Value& value)
+			: root(new Node(value)), size(1), keySelector()
 		{}
 
 		AVLTree(const AVLTree& tree) = delete;
@@ -28,7 +36,8 @@ namespace Structs
 		AVLTree(AVLTree&& tree)
 			:
 			root(::std::move(tree.root)),
-			size(tree.size)
+			size(tree.size),
+			keySelector()
 		{
 			tree.root = nullptr;
 			tree.size = 0;
@@ -49,13 +58,14 @@ namespace Structs
 		}
 
 	public:
-		virtual void Insert(const T& value) override
+		void Insert(const Value& value)
 		{
 			Node* newRoot = nullptr;
+			Key key = keySelector(value);
 
 			try
 			{
-				newRoot = InsertRecursive(root, value);
+				newRoot = InsertRecursive(root, key, value);
 			}
 			catch (std::invalid_argument error)
 			{
@@ -65,13 +75,14 @@ namespace Structs
 			root = newRoot;
 		}
 
-		virtual bool TryInsert(const T& value) override
+		bool TryInsert(const Value& value)
 		{
 			Node* newRoot = nullptr;
+			Key key = keySelector(value);
 
 			try
 			{
-				newRoot = InsertRecursive(root, value);
+				newRoot = InsertRecursive(root, key, value);
 			}
 			catch (std::invalid_argument error)
 			{
@@ -82,13 +93,13 @@ namespace Structs
 			return true;
 		}
 
-		virtual void Remove(const T& value) override
+		void Remove(const Key& key)
 		{
 			Node* newRoot = nullptr;
 
 			try
 			{
-				newRoot = RemoveRecursive(root, value);
+				newRoot = RemoveRecursive(root, key);
 			}
 			catch (std::invalid_argument error)
 			{
@@ -98,13 +109,13 @@ namespace Structs
 			root = newRoot;
 		}
 
-		virtual bool TryRemove(const T& value) override
+		bool TryRemove(const Key& key)
 		{
 			Node* newRoot = nullptr;
 
 			try
 			{
-				newRoot = RemoveRecursive(root, value);
+				newRoot = RemoveRecursive(root, key);
 			}
 			catch (std::invalid_argument error)
 			{
@@ -115,9 +126,9 @@ namespace Structs
 			return true;
 		}
 
-		virtual bool Contains(const T& value) const override
+		bool Contains(const Key& key) const
 		{
-			Node* node = SearchRecursive(root, value);
+			Node* node = SearchRecursive(root, key);
 
 			if (node == nullptr)
 			{
@@ -135,45 +146,51 @@ namespace Structs
 		}
 
 	private:
-		Node* InsertRecursive(Node* node, const T& value)
+		Node* InsertRecursive(Node* node, const Key& key, const Value& value)
 		{
 			if (node == nullptr)
 			{
 				++size;
 				return new Node(value);
 			}
-			else if (node->value > value)
+
+			Key nodeKey = keySelector(node->value);
+
+			if (nodeKey > key)
 			{
-				Node* newLeft = InsertRecursive(node->left, value);
+				Node* newLeft = InsertRecursive(node->left, key, value);
 				node->left = newLeft;
 			}
-			else if (node->value < value)
+			else if (nodeKey < key)
 			{
-				Node* newRight = InsertRecursive(node->right, value);
+				Node* newRight = InsertRecursive(node->right, key, value);
 				node->right = newRight;
 			}
 			else
 			{
-				throw std::invalid_argument("Already contains value = " + value);
+				throw std::invalid_argument("Already contains value with key = " + key);
 			}
 
-			return BalanceNode(node, value);
+			return BalanceNode(node, key);
 		}
 
-		Node* RemoveRecursive(Node* node, const T& value)
+		Node* RemoveRecursive(Node* node, const Key& key)
 		{
 			if (node == nullptr)
 			{
-				throw ::std::invalid_argument("Doesn't contain value = " + value);
+				throw ::std::invalid_argument("Doesn't contain value with key = " + key);
 			}
-			else if (node->value > value)
+
+			Key nodeKey = keySelector(node->value);
+
+			if (nodeKey > key)
 			{
-				Node* newLeft = RemoveRecursive(node->left, value);
+				Node* newLeft = RemoveRecursive(node->left, key);
 				node->left = newLeft;
 			}
-			else if (node->value < value)
+			else if (nodeKey < key)
 			{
-				Node* newRight = RemoveRecursive(node->right, value);
+				Node* newRight = RemoveRecursive(node->right, key);
 				node->right = newRight;
 			}
 			else
@@ -184,24 +201,26 @@ namespace Structs
 			return BalanceNode(node);
 		}
 
-		Node* SearchRecursive(Node* node, const T& value) const
+		Node* SearchRecursive(Node* node, const Key& key) const
 		{
-			if (node == nullptr || node->value == value)
+			if (node == nullptr)
 			{
 				return node;
 			}
 
-			if (node->value > value)
+			Key nodeKey = keySelector(node->value);
+
+			if (nodeKey > key)
 			{
-				return SearchRecursive(node->left, value);
+				return SearchRecursive(node->left, key);
 			}
 
-			if (node->value < value)
+			if (nodeKey < key)
 			{
-				return SearchRecursive(node->right, value);
+				return SearchRecursive(node->right, key);
 			}
 
-			return nullptr;
+			return node;
 		}
 
 		void ClearRecursive(Node* node)
@@ -236,7 +255,7 @@ namespace Structs
 			{
 				Node* temp = GetMostLeftChildOf(node->right);
 				node->value = temp->value;
-				node->right = RemoveRecursive(node->right, temp->value);
+				node->right = RemoveRecursive(node->right, keySelector(temp->value));
 				return node;
 			}
 		}
@@ -284,16 +303,16 @@ namespace Structs
 			return node;
 		}
 
-		Node* BalanceNode(Node* node, const T& newValue)
+		Node* BalanceNode(Node* node, const Key& newKey)
 		{
 			int bf = GetBalanceFactorOf(node);
 
 			if (bf > 1)
 			{
-				const T& lValue = node->left->value;
+				Key lKey = keySelector(node->left->value);
 
 				// Left Left Case  
-				if (newValue <= lValue)
+				if (newKey <= lKey)
 				{
 					return RotateRight(node);
 				}
@@ -308,10 +327,10 @@ namespace Structs
 
 			if (bf < -1)
 			{
-				const T& rValue = node->right->value;
+				Key rKey = keySelector(node->right->value);
 
 				// Right Right Case  
-				if (newValue >= rValue)
+				if (newKey >= rKey)
 				{
 					return RotateLeft(node);
 				}
@@ -385,6 +404,6 @@ namespace Structs
 	private:
 		Node* root;
 		size_t size;
-
+		KeySelector keySelector;
 	};
 }

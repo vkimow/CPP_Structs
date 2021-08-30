@@ -1,8 +1,43 @@
 #pragma once
-#include "IBinaryTree.h"
 
 namespace Structs
 {
+	class IBinaryTreeRelationsNode
+	{
+	protected:
+		IBinaryTreeRelationsNode() = default;
+		IBinaryTreeRelationsNode(const IBinaryTreeRelationsNode& node) = delete;
+		IBinaryTreeRelationsNode& operator=(const IBinaryTreeRelationsNode& node) = delete;
+
+		~IBinaryTreeRelationsNode() = default;
+
+	public:
+		virtual bool HasLeft() const = 0;
+		virtual bool HasRight() const = 0;
+		virtual bool HasChild(bool isRight) const = 0;
+
+		virtual IBinaryTreeRelationsNode* const GetLeft() const = 0;
+		virtual IBinaryTreeRelationsNode* const GetRight() const = 0;
+		virtual IBinaryTreeRelationsNode* const GetChild(bool isRight) const = 0;
+	};
+
+	template <typename T>
+	class IBinaryTreeNode : public IBinaryTreeRelationsNode
+	{
+	protected:
+		IBinaryTreeNode() = default;
+
+	public:
+		virtual ~IBinaryTreeNode() = default;
+
+	public:
+		virtual T& GetValue() = 0;
+
+		virtual IBinaryTreeNode* const GetLeft() const override = 0;
+		virtual IBinaryTreeNode* const GetRight() const override = 0;
+		virtual IBinaryTreeNode* const GetChild(bool isRight) const override = 0;
+	};
+
 	template <typename T>
 	class BinaryTreeNode : public IBinaryTreeNode<T>
 	{

@@ -1,5 +1,6 @@
 #pragma once
-#include "IBinaryTree.h"
+#include "../Collection/ICollection.h"
+#include "../Collection/IIterable.h"
 #include "BinaryTreeNode.h"
 #include "BinaryTreeIterators.h"
 #include <stdexcept>
@@ -7,6 +8,26 @@
 
 namespace Structs
 {
+	template <typename T, typename Iterator>
+	class IBinaryTree : public IIterable<T, Iterator>, public ICollection
+	{
+	protected:
+		IBinaryTree() = default;
+		IBinaryTree(const IBinaryTree& tree) = delete;
+		IBinaryTree& operator=(const IBinaryTree& tree) = delete;
+
+	public:
+		virtual ~IBinaryTree() = default;
+
+	public:
+		virtual void Insert(const T& value) = 0;
+		virtual void Remove(const T& value) = 0;
+		virtual bool Contains(const T& value) const = 0;
+
+		virtual bool TryInsert(const T& value) = 0;
+		virtual bool TryRemove(const T& value) = 0;
+	};
+
 	template <typename T>
 	class BinaryTree final : public IBinaryTree<T, BinaryTreeInorderIterator<T>>
 	{

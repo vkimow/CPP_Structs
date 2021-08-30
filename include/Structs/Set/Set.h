@@ -63,10 +63,6 @@ namespace Structs
 			: tree()
 		{}
 
-		Set(const T& value)
-			: tree(value)
-		{}
-
 		~Set()
 		{
 			Clear();

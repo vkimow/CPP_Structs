@@ -2,6 +2,7 @@
 #include "IList.h"
 #include <stdexcept>
 #include <string>
+#include <tuple>
 
 namespace Structs
 {
@@ -39,23 +40,22 @@ namespace Structs
 	template<typename T>
 	XORListNode<T>* GetNextXORNode(XORListNode<T>* node, XORListNode<T>* previous)
 	{
-		return GetNodesNPX(node->npx, previous);
+		return GetNodesNPX(node->GetNPX(), previous);
 	}
 
 	template<typename T>
 	XORListNode<T>* GetPreviousXORNode(XORListNode<T>* node, XORListNode<T>* next)
 	{
-		return GetNodesNPX(node->npx, next);
+		return GetNodesNPX(node->GetNPX(), next);
 	}
 #pragma endregion
 
 #pragma region Iterator
 	template <typename T>
-	class XORListIterator final : IIterator<T, XORListNode<T>>
+	class XORListIterator final : IIterator<T, XORListIterator<T>>
 	{
 	private:
 		using Node = XORListNode<T>;
-		using Iterator = XORListIterator;
 
 	public:
 		XORListIterator()
@@ -67,44 +67,56 @@ namespace Structs
 		{}
 
 	public:
-		virtual Iterator& operator++() override
+		virtual XORListIterator& operator++() override
 		{
-			Node* newNext = GetNextXORNode(current, previous);
+			Node* newNext = nullptr;
+
+			if (next != nullptr)
+			{
+				newNext = GetNextXORNode(next, current);
+			}
+
 			previous = current;
 			current = next;
 			next = newNext;
 			return *this;
 		}
 
-		virtual Iterator& operator++(int) override
+		virtual XORListIterator& operator++(int) override
 		{
-			Iterator<T> tempIterator = *this;
+			XORListIterator<T> tempIterator = *this;
 			++(*this);
 			return tempIterator;
 		}
 
-		Iterator& operator--()
+		XORListIterator& operator--()
 		{
-			Node* newPrevious = GetPreviousXORNode(previous, current);
+			Node* newPrevious = nullptr;
+
+			if (next != nullptr)
+			{
+				newPrevious = GetPreviousXORNode(previous, current);
+			}
+
 			next = current;
 			current = previous;
 			previous = newPrevious;
 			return *this;
 		}
 
-		Iterator operator--(int)
+		XORListIterator operator--(int)
 		{
-			Iterator tempIterator = *this;
+			XORListIterator tempIterator = *this;
 			--(*this);
 			return tempIterator;
 		}
 
-		virtual bool operator==(const Iterator& rhs) const override
+		virtual bool operator==(const XORListIterator& rhs) const override
 		{
 			return current == rhs.current;
 		}
 
-		virtual bool operator!=(const Iterator& rhs) const override
+		virtual bool operator!=(const XORListIterator& rhs) const override
 		{
 			return current != rhs.current;
 		}
@@ -146,7 +158,7 @@ namespace Structs
 			size(1)
 		{}
 
-		XORList(List&& list)
+		XORList(XORList&& list)
 			: head(std::move(list.head)),
 			tail(std::move(list.tail)),
 			size(size)
@@ -156,7 +168,7 @@ namespace Structs
 			list.size = 0;
 		}
 
-		XORList& operator=(List&& rhs)
+		XORList& operator=(XORList&& rhs)
 		{
 			if (*this == rhs)
 				return;
@@ -202,10 +214,11 @@ namespace Structs
 
 			std::tuple<Node*, Node*, Node*> nodes = GetNodeWithNextAndPreviousFromHead(value);
 
-			Node* previous = GetPreviousXORNode(nodes[0], nodes[1]);
-			Node* newNode = new Node(value, nodes[0], nodes[1]);
-			nodes[0]->SetNPX(GetNodesNPX(previous, newNode));
-			nodes[1]->SetNPX(GetNodesNPX(nodes[2], newNode));
+
+			Node* previous = GetPreviousXORNode(std::get<0>(nodes), std::get<1>(nodes));
+			Node* newNode = new Node(value, std::get<0>(nodes), std::get<0>(nodes));
+			std::get<0>(nodes)->SetNPX(GetNodesNPX(previous, newNode));
+			std::get<1>(nodes)->SetNPX(GetNodesNPX(std::get<2>(nodes), newNode));
 			++size;
 		}
 
@@ -213,12 +226,12 @@ namespace Structs
 		{
 			if (IsEmpty())
 			{
-				CreateHead();
+				CreateHead(value);
 				return;
 			}
 
 			Node* newHead = new Node(value, nullptr, head);
-			head->SetNPX(GetNodesNPX(newHead, head->npx));
+			head->SetNPX(GetNodesNPX(newHead, head->GetNPX()));
 			head = newHead;
 			++size;
 		}
@@ -227,12 +240,12 @@ namespace Structs
 		{
 			if (IsEmpty())
 			{
-				CreateHead();
+				CreateHead(value);
 				return;
 			}
 
 			Node* newTail = new Node(value, tail, nullptr);
-			tail->SetNPX(GetNodesNPX(newTail, head->npx));
+			tail->SetNPX(GetNodesNPX(newTail, tail->GetNPX()));
 			tail = newTail;
 			++size;
 		}
@@ -240,17 +253,17 @@ namespace Structs
 	public:
 		virtual void RemoveAt(size_t index) override
 		{
-			if (index <= 0 || index >= size)
+			if (index <= 0 || index >= size - 1)
 			{
 				if (index == 0)
 				{
-					AddFirst(value);
+					RemoveFirst();
 					return;
 				}
 
-				if (index == size)
+				if (index == size - 1)
 				{
-					AddLast(value);
+					RemoveLast();
 					return;
 				}
 
@@ -276,22 +289,34 @@ namespace Structs
 
 		virtual void RemoveFirst() override
 		{
-			Node* newHead = GetNextXORNode(head, nullptr);
+			if (IsEmpty())
+			{
+				throw ::std::invalid_argument("Doesn't have values");
+			}
+
+			Node* newHead = GetNextXORNode<T>(head, nullptr);
 			Node* next = GetNextXORNode(newHead, head);
 			delete head;
 
-			newHead->SetNPX(GetNodesNPX(nullptr, next));
+			newHead->SetNPX(GetNodesNPX<T>(nullptr, next));
 			head = newHead;
+			--size;
 		}
 
 		virtual void RemoveLast() override
 		{
-			Node* newTail = GetPreviousXORNode(tail, nullptr);
+			if (IsEmpty())
+			{
+				throw ::std::invalid_argument("Doesn't have values");
+			}
+
+			Node* newTail = GetPreviousXORNode<T>(tail, nullptr);
 			Node* previous = GetPreviousXORNode(newTail, tail);
 			delete tail;
 
-			newTail->SetNPX(GetNodesNPX(previous, nullptr));
+			newTail->SetNPX(GetNodesNPX<T>(previous, nullptr));
 			tail = newTail;
+			--size;
 		}
 
 		virtual T& GetAt(size_t index) override { return GetNodeByIndex(index)->GetValue(); }
@@ -307,32 +332,33 @@ namespace Structs
 			size = 1;
 		}
 
-		void RemoveNodeInTuple(std::tuple<Noir*, Noir*, Noir*>& nodes)
+		void RemoveNodeInTuple(std::tuple<Node*, Node*, Node*>& nodes)
 		{
-			if (nodes[1] == nullptr)
+			if (std::get<1>(nodes) == nullptr)
 			{
-				throw ::std::invalid_argument("Doesn't contain value = " + value);
+				throw ::std::invalid_argument("Doesn't contain value");
 			}
 
-			if (nodes[0] == nullptr)
+			if (std::get<0>(nodes) == nullptr)
 			{
 				RemoveFirst();
 				return;
 			}
 
-			if (nodes[2] == nullptr)
+			if (std::get<2>(nodes) == nullptr)
 			{
 				RemoveLast();
 				return;
 			}
 
-			Node* next = GetNextXORNode(nodes[2], nodes[1]);
-			Node* previous = GetPreviousXORNode(nodes[0], nodes[1]);
+			Node* next = GetNextXORNode(std::get<2>(nodes), std::get<1>(nodes));
+			Node* previous = GetPreviousXORNode(std::get<0>(nodes), std::get<1>(nodes));
 
-			nodes[2]->SetNPX(GetNodesNPX(nodes[0], next));
-			nodes[0]->SetNPX(GetNodesNPX(nodes[2], previous));
+			std::get<2>(nodes)->SetNPX(GetNodesNPX(std::get<0>(nodes), next));
+			std::get<0>(nodes)->SetNPX(GetNodesNPX(std::get<2>(nodes), previous));
 
-			delete nodes[1];
+			delete std::get<1>(nodes);
+			--size;
 		}
 
 	private:
@@ -497,7 +523,7 @@ namespace Structs
 			delete previous;
 		}
 
-		virtual Iterator begin() const override { return Iterator(nullptr, head, GetNextXORNode(head, nullptr)); }
+		virtual Iterator begin() const override { return Iterator(nullptr, head, GetNextXORNode<T>(head, nullptr)); }
 		virtual Iterator end() const override { return Iterator(); }
 
 	private:

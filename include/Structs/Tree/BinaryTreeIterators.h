@@ -1,5 +1,4 @@
 #pragma once
-#include "IBinaryTree.h"
 #include "../Collection/IIterator.h"
 #include <stdexcept>
 #include <string>
