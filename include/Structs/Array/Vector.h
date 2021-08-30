@@ -119,7 +119,7 @@ namespace Structs
 		{
 			if (size >= capacity)
 			{
-				ReAlloc(capacity * 2);
+				ReAlloc();
 			}
 
 			elements[size] = value;
@@ -135,7 +135,7 @@ namespace Structs
 
 			if (size >= capacity)
 			{
-				ReAlloc(capacity * 2);
+				ReAlloc();
 			}
 
 			for (size_t i = size - 1; i >= index; --i)
@@ -195,6 +195,12 @@ namespace Structs
 		}
 
 	private:
+		void ReAlloc()
+		{
+			size_t newCapacity = capacity * 2;
+			ReAlloc(newCapacity);
+		}
+
 		void ReAlloc(size_t newCapacity)
 		{
 			T* newElements = new T[newCapacity];
