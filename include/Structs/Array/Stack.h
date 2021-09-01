@@ -1,74 +1,16 @@
 #pragma once
 #include "../Collection/ICollection.h"
 #include "../Collection/IIterable.h"
+#include "Vector.h"
 #include <stdexcept>
 
 namespace Structs
 {
 	template <typename T>
-	class StackIterator : IIterator<T, StackIterator<T>>
+	class Stack final : public IIterable<T, VectorIterator<T>>, public ICollection
 	{
 	public:
-		StackIterator() = delete;
-		StackIterator(T* element)
-			: element(element)
-		{}
-
-		StackIterator& operator++() override
-		{
-			++element;
-			return *this;
-		}
-
-		StackIterator& operator++(int) override
-		{
-			StackIterator temp = *this;
-			++(*this);
-			return temp;
-		}
-
-		StackIterator& operator--()
-		{
-			--element;
-			return *this;
-		}
-
-		StackIterator& operator--(int)
-		{
-			StackIterator temp = this;
-			--(*this);
-			return temp;
-		}
-
-		bool operator==(const StackIterator& rhs) const override
-		{
-			return element == rhs.element;
-		}
-
-		bool operator!=(const StackIterator& rhs) const override
-		{
-			return !(*this == rhs);
-		}
-
-		T* operator->() const override
-		{
-			return element;
-		}
-
-		T& operator*() const override
-		{
-			return *element;
-		}
-
-	private:
-		T* element;
-	};
-
-	template <typename T>
-	class Stack final : public IIterable<T, StackIterator<T>>, public ICollection
-	{
-	public:
-		using Iterator = StackIterator<T>;
+		using Iterator = VectorIterator<T>;
 
 	public:
 		Stack()

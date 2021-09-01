@@ -367,6 +367,12 @@ namespace Structs
 
 		void ReAlloc()
 		{
+			if (capacity == 0)
+			{
+				ReAlloc(5);
+				return;
+			}
+
 			size_t newCapacity = capacity * 2;
 			ReAlloc(newCapacity);
 		}
